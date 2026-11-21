@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Five quick browser games about cats: swat things off a shelf, pounce on a laser dot, pick the perfect box, chase a patch of sunlight, and hop across a river without getting wet.">
+<title>Nine Lives Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;600&display=swap">
+<style>
+  /* Layout: one arcade-cabinet column. Game picker, score strip, play screen, then how-to-play. A 3 AM living room at night, lit by a marmalade cat. */
+  :root {
+    --night: #121830;
+    --panel: #1b2340;
+    --panel-hi: #253061;
+    --line: #2f3a68;
+    --floor: #1a1f38;
+    --fur: #f6efe4;
+    --muted: #9ba6cf;
+    --marmalade: #ff9b3d;
+    --stripe: #d0701f;
+    --pink: #ff9fb2;
+    --eye: #c9e35a;
+    --ink: #15131a;
+    --laser: #ff2d55;
+    --leaf: #5fbf7f;
+    --wood: #7a5236;
+    --glass: rgba(170, 220, 255, 0.45);
+    --vase: #5e8bff;
+    --skin: #e8b796;
+    --hair: #3b2a22;
+    --shirt: #4b5fa8;
+    --box: #c99a5a;
+    --box-dark: #8a6232;
+    --sun: #ffd65a;
+    --water: #1f4a78;
+    --water-hi: #3b75b0;
+    --grass: #2e5a3c;
+    --sand: #b99a62;
+    --bark: #4f331f;
+    --scrim: rgba(13, 18, 38, 0.76);
+    --display: "Bagel Fat One", "Arial Rounded MT Bold", system-ui, sans-serif;
+    --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { background: var(--night); color: var(--fur); }
+  body { font-family: var(--body); font-size: 16px; line-height: 1.5; }
+  .wrap {
+    max-width: 860px; margin: 0 auto; display: grid; gap: 20px;
+    padding-block: 28px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  header { display: grid; gap: 8px; }
+  h1 {
+    font-family: var(--display); font-weight: 400; margin: 0; line-height: 1;
+    font-size: clamp(2.3rem, 7.5vw, 3.8rem); color: var(--marmalade); text-wrap: balance;
+  }
+  header p { margin: 0; color: var(--muted); max-width: 58ch; }
+  .tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 760px) { .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .tab {
+    appearance: none; font: inherit; color: var(--fur); text-align: left; cursor: pointer;
+    background: var(--panel); border: 2px solid var(--line); border-radius: 14px;
+    padding: 12px 14px; display: grid; gap: 2px; align-content: start;
+    transition: border-color .15s, background .15s;
+  }
+  .tab b { font-family: var(--display); font-weight: 400; font-size: 1.15rem; line-height: 1.15; }
+  .tab span { color: var(--muted); font-size: .86rem; line-height: 1.3; }
+  .tab:hover { border-color: var(--muted); }
+  .tab[aria-selected="true"] { border-color: var(--marmalade); background: var(--panel-hi); }
+  .tab:focus-visible, canvas:focus-visible { outline: 3px solid var(--eye); outline-offset: 3px; }
+  .cabinet {
+    background: var(--panel); border: 2px solid var(--line); border-radius: 20px;
+    padding: 12px; display: grid; gap: 10px;
+  }
+  .hud { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline; margin: 0; padding: 2px 6px; }
+  .stat { display: flex; gap: 8px; align-items: baseline; }
+  .stat dt { text-transform: uppercase; letter-spacing: .09em; font-size: .72rem; color: var(--muted); }
+  .stat dd { margin: 0; font-family: var(--display); font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+  .stat:last-child { margin-left: auto; }
+  .stat:last-child dd { color: var(--eye); }
+  canvas {
+    display: block; width: 100%; max-width: 100%; height: 360px; border-radius: 12px;
+    background: var(--night); touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none;
+  }
+  .rules { display: grid; gap: 4px; max-width: 65ch; padding-inline: 4px; }
+  .rules h2 { font-family: var(--display); font-weight: 400; font-size: 1.2rem; margin: 0; color: var(--marmalade); text-wrap: balance; }
+  .rules p { margin: 0; color: var(--fur); }
+  .below { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .board { background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+  .board h2 { font-family: var(--display); font-weight: 400; font-size: 1.2rem; margin: 0; color: var(--marmalade); text-wrap: balance; }
+  .board-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .board-list li { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 8px; font-variant-numeric: tabular-nums; }
+  .board-list .rk { color: var(--muted); font-weight: 600; }
+  .board-list li:first-child .rk { color: var(--marmalade); }
+  .board-list .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .board-list .sc { font-family: var(--display); }
+  .board-list li.me { background: var(--panel-hi); box-shadow: inset 0 0 0 2px var(--marmalade); }
+  .msg { margin: 0; color: var(--muted); font-size: .92rem; }
+  .msg.err { color: var(--pink); }
+  .submit { display: grid; gap: 8px; padding: 2px 6px 4px; }
+  .submit label { font-weight: 600; }
+  .submit label b { font-family: var(--display); font-weight: 400; color: var(--marmalade); font-size: 1.2rem; }
+  .submit .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .submit input { flex: 1 1 180px; min-width: 0; font: inherit; color: var(--fur); background: var(--night); border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .submit input::placeholder { color: var(--muted); }
+  .submit button { font: inherit; font-weight: 600; color: var(--ink); background: var(--marmalade); border: 0; border-radius: 10px; padding: 10px 18px; cursor: pointer; }
+  .submit button[disabled] { opacity: .6; cursor: default; }
+  .submit input:focus-visible, .submit button:focus-visible { outline: 3px solid var(--eye); outline-offset: 2px; }
+  footer { color: var(--muted); font-size: .85rem; padding-inline: 4px; }
+  @media (max-width: 560px) {
+    .tab { text-align: center; padding: 10px 6px; }
+    .tab b { font-size: .98rem; }
+    .tab span { display: none; }
+    .stat:last-child { margin-left: 0; }
+  }
+  @media (max-width: 700px) { .below { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body style="margin:0">
+
+<div class="wrap">
+  <header>
+    <h1>Nine Lives Arcade</h1>
+    <p>Five quick games about cats doing exactly what they want.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Games">
+    <button class="tab" id="tab-knock" role="tab" data-game="knock" aria-selected="true"><b>Knock It Off</b><span>Gravity, tested one mug at a time</span></button>
+    <button class="tab" id="tab-laser" role="tab" data-game="laser" aria-selected="false"><b>Laser Pounce</b><span>Catch the red dot. Finally.</span></button>
+    <button class="tab" id="tab-box" role="tab" data-game="box" aria-selected="false"><b>If It Fits, I Sits</b><span>Judge the box. Claim the box.</span></button>
+    <button class="tab" id="tab-sun" role="tab" data-game="sun" aria-selected="false"><b>Catch the Sun</b><span>Find the warm spot. Nap in it.</span></button>
+    <button class="tab" id="tab-river" role="tab" data-game="river" aria-selected="false"><b>Dry Paws</b><span>Hop the logs. Stay dry.</span></button>
+  </nav>
+
+  <section class="cabinet" aria-label="Game">
+    <dl class="hud">
+      <div class="stat"><dt id="l0">Score</dt><dd id="v0">0</dd></div>
+      <div class="stat"><dt id="l1">Time</dt><dd id="v1">30s</dd></div>
+      <div class="stat"><dt id="l2">Strikes</dt><dd id="v2">0 / 3</dd></div>
+      <div class="stat"><dt id="l3">Best</dt><dd id="v3">0</dd></div>
+    </dl>
+    <canvas id="stage" tabindex="0" aria-label="Game screen. Click or tap to play; Space or Enter starts a round. In Catch the Sun, arrow keys move the cat."></canvas>
+    <form id="submit-form" class="submit" hidden>
+      <label for="nick">You scored <b id="submit-score">0</b>. Put it on the leaderboard:</label>
+      <div class="row">
+        <input id="nick" name="nick" maxlength="12" autocomplete="nickname" placeholder="Your nickname" required>
+        <button type="submit" id="submit-btn">Submit score</button>
+      </div>
+      <p id="submit-msg" class="msg" role="status"></p>
+    </form>
+  </section>
+
+  <div class="below">
+    <section class="board" aria-labelledby="board-title">
+      <h2 id="board-title">Top 10</h2>
+      <ol id="board-list" class="board-list"></ol>
+      <p id="board-msg" class="msg" role="status">Loading scores…</p>
+    </section>
+    <section class="rules">
+      <h2 id="rules-title">How to play</h2>
+      <p id="rules"></p>
+    </section>
+  </div>
+
+  <footer>Leaderboard names are public, so skip your real name. Your personal best is saved in this browser.</footer>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+  const rootStyle = getComputedStyle(document.documentElement);
+  const C = {};
+  ['night','panel','panelHi','line','floor','fur','muted','marmalade','stripe','pink','eye','ink','laser','leaf','wood','glass','vase','skin','hair','shirt','box','boxDark','scrim','sun','water','waterHi','grass','sand','bark']
+    .forEach(k => { C[k] = rootStyle.getPropertyValue('--' + k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())).trim(); });
+  const DISPLAY = '"Bagel Fat One","Arial Rounded MT Bold",system-ui,sans-serif';
+  const BODY = '"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif';
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tapWord = matchMedia('(pointer: coarse)').matches ? 'Tap' : 'Click';
+
+  let W = 640, H = 400;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const unit = () => Math.min(W, H * 1.5);
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth || 640;
+    H = Math.round(clamp(W * 0.62, 300, 460));
+    canvas.style.height = H + 'px';
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  const bestCache = {};
+  const best = {
+    get(k) {
+      if (!(k in bestCache)) {
+        try { bestCache[k] = Number(localStorage.getItem('nine-lives-best-' + k)) || 0; } catch (e) { bestCache[k] = 0; }
+      }
+      return bestCache[k];
+    },
+    set(k, v) {
+      bestCache[k] = v;
+      try { localStorage.setItem('nine-lives-best-' + k, String(v)); } catch (e) {}
+    }
+  };
+
+  /* ---------- drawing helpers ---------- */
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+  }
+  function text(str, x, y, size, color, outline, font = DISPLAY, align = 'center') {
+    ctx.font = `${size}px ${font}`;
+    ctx.textAlign = align; ctx.textBaseline = 'middle';
+    if (outline) { ctx.lineJoin = 'round'; ctx.lineWidth = size * 0.22; ctx.strokeStyle = outline; ctx.strokeText(str, x, y); }
+    ctx.fillStyle = color; ctx.fillText(str, x, y);
+  }
+  function wrapText(str, x, y, maxW, size, color, font = BODY) {
+    ctx.font = `${size}px ${font}`;
+    const lines = []; let line = '';
+    for (const word of str.split(' ')) {
+      const t = line ? line + ' ' + word : word;
+      if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = word; } else line = t;
+    }
+    if (line) lines.push(line);
+    ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    lines.forEach((l, i) => ctx.fillText(l, x, y + i * size * 1.35));
+    return lines.length * size * 1.35;
+  }
+
+  function drawCat(x, y, s, o = {}) {
+    const fur = o.fur || C.marmalade;
+    ctx.save(); ctx.translate(x, y);
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = fur;
+      ctx.beginPath(); ctx.moveTo(side * s * 0.95, -s * 0.2); ctx.lineTo(side * s * 0.78, -s * 1.25); ctx.lineTo(side * s * 0.18, -s * 0.82); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = C.pink;
+      ctx.beginPath(); ctx.moveTo(side * s * 0.8, -s * 0.38); ctx.lineTo(side * s * 0.74, -s * 1.0); ctx.lineTo(side * s * 0.38, -s * 0.76); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = fur;
+    ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.88, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C.stripe; ctx.lineWidth = s * 0.09; ctx.lineCap = 'round';
+    for (const i of [-1, 0, 1]) { ctx.beginPath(); ctx.moveTo(i * s * 0.24, -s * 0.8); ctx.lineTo(i * s * 0.17, -s * 0.52); ctx.stroke(); }
+    const ex = s * 0.38, ey = -s * 0.08, er = s * 0.22;
+    for (const side of [-1, 1]) {
+      ctx.save(); ctx.translate(side * ex, ey);
+      if (o.blink) {
+        ctx.strokeStyle = C.ink; ctx.lineWidth = s * 0.07;
+        ctx.beginPath(); ctx.arc(0, -er * 0.3, er * 0.8, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+      } else {
+        ctx.fillStyle = C.eye; ctx.beginPath(); ctx.ellipse(0, 0, er, er * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+        let px = 0, py = 0;
+        if (o.look) {
+          const dx = o.look.x - (x + side * ex), dy = o.look.y - (y + ey);
+          const d = Math.hypot(dx, dy) || 1;
+          px = dx / d * er * 0.42; py = dy / d * er * 0.42;
+        }
+        const pw = o.pupil == null ? 0.25 : o.pupil;
+        ctx.fillStyle = C.ink; ctx.beginPath(); ctx.ellipse(px, py, er * pw, er * 0.82, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = C.fur; ctx.beginPath(); ctx.arc(px + er * 0.25, py - er * 0.35, er * 0.15, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.fillStyle = C.pink;
+    ctx.beginPath(); ctx.moveTo(-s * 0.1, s * 0.2); ctx.lineTo(s * 0.1, s * 0.2); ctx.lineTo(0, s * 0.32); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(1, s * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.32); ctx.quadraticCurveTo(-s * 0.08, s * 0.46, -s * 0.2, s * 0.38);
+    ctx.moveTo(0, s * 0.32); ctx.quadraticCurveTo(s * 0.08, s * 0.46, s * 0.2, s * 0.38);
+    ctx.stroke();
+    ctx.strokeStyle = C.fur; ctx.lineWidth = Math.max(1, s * 0.025);
+    for (const side of [-1, 1]) for (const k of [-1, 0, 1]) {
+      ctx.beginPath(); ctx.moveTo(side * s * 0.32, s * 0.27 + k * s * 0.06); ctx.lineTo(side * s * 1.25, s * 0.2 + k * s * 0.17); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawLoaf(cx, b, w, o = {}) {
+    const h = w * 0.5;
+    ctx.strokeStyle = C.marmalade; ctx.lineWidth = w * 0.09; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx - w * 0.4, b - h * 0.35); ctx.quadraticCurveTo(cx - w * 0.66, b - h * 0.05, cx - w * 0.28, b - h * 0.06); ctx.stroke();
+    ctx.fillStyle = C.marmalade;
+    ctx.beginPath(); ctx.ellipse(cx, b - h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C.stripe; ctx.lineWidth = w * 0.035;
+    for (const off of [-0.28, -0.13, 0.02]) {
+      ctx.beginPath(); ctx.moveTo(cx + off * w, b - h * 0.97); ctx.quadraticCurveTo(cx + off * w - w * 0.04, b - h * 0.76, cx + off * w, b - h * 0.56); ctx.stroke();
+    }
+    drawCat(cx + w * 0.3, b - h * 0.9, w * 0.2, o);
+  }
+
+  function drawPaw(x, y, r, a) {
+    ctx.globalAlpha = a * 0.85; ctx.fillStyle = C.pink;
+    ctx.beginPath(); ctx.ellipse(x, y + r * 0.25, r * 0.55, r * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+    for (const [tx, ty] of [[-0.58, -0.35], [-0.2, -0.72], [0.2, -0.72], [0.58, -0.35]]) {
+      ctx.beginPath(); ctx.ellipse(x + tx * r, y + ty * r, r * 0.2, r * 0.24, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ---------- shared effects ---------- */
+  const fx = {
+    pops: [], parts: [], paws: [],
+    reset() { this.pops = []; this.parts = []; this.paws = []; },
+    pop(x, y, t, color, size) { this.pops.push({ x, y, t, color, size, life: 1 }); },
+    burst(x, y, n, colors) {
+      if (calm) return;
+      for (let i = 0; i < n; i++) this.parts.push({ x, y, vx: rnd(-170, 170), vy: rnd(-280, -60), life: rnd(0.5, 0.9), r: rnd(2, 5), c: pick(colors) });
+    },
+    update(dt) {
+      for (const p of this.pops) { p.life -= dt * 0.9; p.y -= 30 * dt; }
+      this.pops = this.pops.filter(p => p.life > 0);
+      for (const p of this.parts) { p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+      this.parts = this.parts.filter(p => p.life > 0);
+      for (const p of this.paws) p.life -= dt;
+      this.paws = this.paws.filter(p => p.life > 0);
+    },
+    draw() {
+      for (const p of this.parts) { ctx.globalAlpha = clamp(p.life * 1.5, 0, 1); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.r / 2, p.y - p.r / 2, p.r, p.r); }
+      ctx.globalAlpha = 1;
+      for (const p of this.paws) drawPaw(p.x, p.y, p.r, clamp(p.life / 0.6, 0, 1));
+      for (const p of this.pops) { ctx.globalAlpha = clamp(p.life * 1.6, 0, 1); text(p.t, p.x, p.y, p.size, p.color, C.night); }
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  /* ---------- Game 1: Knock It Off ---------- */
+  const KINDS = {
+    mug:   { w: 1.0, h: 0.95, pts: 2, sound: 'CLONK' },
+    plant: { w: 1.0, h: 1.7,  pts: 2, sound: 'THUD' },
+    glass: { w: 0.7, h: 1.25, pts: 3, sound: 'SMASH' },
+    vase:  { w: 0.9, h: 1.6,  pts: 3, sound: 'CRASH' },
+    phone: { w: 0.6, h: 1.05, pts: 2, sound: 'CRACK' },
+    yarn:  { w: 0.9, h: 0.9,  pts: 1, sound: 'boing' }
+  };
+  function drawItem(kind, x, b, s, rot) {
+    const k = KINDS[kind], w = k.w * s, h = k.h * s;
+    ctx.save(); ctx.translate(x, b); ctx.rotate(rot);
+    if (kind === 'mug') {
+      ctx.strokeStyle = C.fur; ctx.lineWidth = s * 0.13;
+      ctx.beginPath(); ctx.arc(w * 0.32, -h * 0.5, h * 0.24, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+      ctx.fillStyle = C.fur; rr(-w / 2, -h, w * 0.82, h, s * 0.12); ctx.fill();
+      ctx.fillStyle = C.wood; ctx.fillRect(-w / 2 + s * 0.08, -h + s * 0.07, w * 0.82 - s * 0.16, s * 0.12);
+    } else if (kind === 'plant') {
+      ctx.fillStyle = C.leaf;
+      for (const [lx, ly, a] of [[-0.25, -1.25, -0.5], [0.25, -1.25, 0.5], [0, -1.45, 0]]) {
+        ctx.beginPath(); ctx.ellipse(lx * s, ly * s, s * 0.18, s * 0.42, a, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = C.stripe;
+      ctx.beginPath(); ctx.moveTo(-w / 2, -h * 0.5); ctx.lineTo(w / 2, -h * 0.5); ctx.lineTo(w * 0.36, 0); ctx.lineTo(-w * 0.36, 0); ctx.closePath(); ctx.fill();
+    } else if (kind === 'glass') {
+      ctx.fillStyle = C.glass; ctx.fillRect(-w / 2, -h, w, h);
+      ctx.strokeStyle = C.fur; ctx.lineWidth = 1.5; ctx.strokeRect(-w / 2, -h, w, h);
+      ctx.fillStyle = C.vase; ctx.globalAlpha = 0.5; ctx.fillRect(-w / 2 + 1, -h * 0.55, w - 2, h * 0.55 - 1); ctx.globalAlpha = 1;
+    } else if (kind === 'vase') {
+      ctx.fillStyle = C.vase;
+      ctx.beginPath(); ctx.moveTo(-w * 0.22, -h); ctx.lineTo(w * 0.22, -h);
+      ctx.bezierCurveTo(w * 0.2, -h * 0.7, w * 0.62, -h * 0.5, w * 0.36, 0);
+      ctx.lineTo(-w * 0.36, 0); ctx.bezierCurveTo(-w * 0.62, -h * 0.5, -w * 0.2, -h * 0.7, -w * 0.22, -h);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = C.fur; ctx.lineWidth = s * 0.06;
+      ctx.beginPath(); ctx.moveTo(-w * 0.38, -h * 0.4); ctx.lineTo(w * 0.38, -h * 0.4); ctx.stroke();
+    } else if (kind === 'phone') {
+      ctx.fillStyle = C.ink; rr(-w / 2, -h, w, h, s * 0.1); ctx.fill();
+      ctx.fillStyle = C.eye; ctx.globalAlpha = 0.75; rr(-w / 2 + s * 0.06, -h + s * 0.08, w - s * 0.12, h - s * 0.2, s * 0.05); ctx.fill(); ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = C.pink; ctx.beginPath(); ctx.arc(0, -h / 2, h / 2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = C.stripe; ctx.lineWidth = s * 0.05;
+      for (const a of [-0.6, 0, 0.6]) { ctx.beginPath(); ctx.ellipse(0, -h / 2, h * 0.2, h / 2 - 1, a, 0, Math.PI * 2); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+
+  const Knock = {
+    key: 'knock', title: 'Knock It Off',
+    pitch: 'Swat everything off the shelf. Freeze when the human turns around.',
+    rules: 'Tap or click things on the shelf to swat them onto the floor. Glasses and vases are worth 3 points, mugs, plants and phones 2, yarn 1. When the human turns to face you, stop. Get caught three times and you are banished to the bathroom. 30 seconds.',
+    reset() {
+      this.score = 0; this.time = 30; this.strikes = 0; this.over = false; this.banished = false;
+      this.items = []; this.falling = []; this.respawn = [];
+      this.human = { state: 'away', t: rnd(1.8, 3) };
+      this.swat = 0; this.swatX = 0; this.caught = 0;
+      for (let i = 0; i < 5; i++) this.items.push(this.make(i));
+    },
+    make(slot) { return { slot, kind: pick(Object.keys(KINDS)), wob: 0 }; },
+    s() { return unit() * 0.065; },
+    shelfY() { return H * 0.64; },
+    slotX(i) { const l = W * 0.07, r = W * 0.76; return l + (i + 0.5) * (r - l) / 5; },
+    hud() { return [['Score', this.score], ['Time', Math.ceil(this.time) + 's'], ['Strikes', this.strikes + ' / 3']]; },
+    humanTick(dt) {
+      const h = this.human; h.t -= dt;
+      if (h.t > 0) return;
+      const elapsed = 30 - this.time;
+      if (h.state === 'away') { h.state = 'turning'; h.t = Math.max(0.4, 0.75 - elapsed * 0.012); }
+      else if (h.state === 'turning') { h.state = 'watching'; h.t = rnd(1, 2.2); }
+      else { h.state = 'away'; h.t = rnd(1.2, 3.4); }
+    },
+    idle(dt) { this.humanTick(dt); },
+    update(dt) {
+      this.time -= dt;
+      if (this.time <= 0) { this.time = 0; this.over = true; }
+      this.humanTick(dt);
+      this.swat = Math.max(0, this.swat - dt);
+      this.caught = Math.max(0, this.caught - dt);
+      const s = this.s(), floor = H * 0.94, g = H * 3.6;
+      for (const f of this.falling) {
+        f.vy += g * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt;
+        if (f.y > floor) {
+          f.dead = true;
+          fx.burst(f.x, floor, 14, [C.fur, C.vase, C.marmalade, C.leaf]);
+          fx.pop(f.x, floor - s * 1.2, KINDS[f.kind].sound, C.fur, clamp(s * 0.7, 16, 28));
+          this.respawn.push({ slot: f.slot, t: rnd(0.6, 1.2) });
+        }
+      }
+      this.falling = this.falling.filter(f => !f.dead);
+      for (const r of this.respawn) { r.t -= dt; if (r.t <= 0) { r.done = true; this.items.push(this.make(r.slot)); } }
+      this.respawn = this.respawn.filter(r => !r.done);
+      for (const it of this.items) it.wob = Math.max(0, it.wob - dt);
+    },
+    tap(x, y) {
+      const s = this.s(), sy = this.shelfY();
+      let hit = null;
+      for (const it of this.items) {
+        const k = KINDS[it.kind], ix = this.slotX(it.slot), w = k.w * s, h = k.h * s;
+        if (x > ix - w / 2 - s * 0.35 && x < ix + w / 2 + s * 0.35 && y > sy - h - s * 0.45 && y < sy + s * 0.35) { hit = it; break; }
+      }
+      if (!hit) return;
+      const ix = this.slotX(hit.slot);
+      if (this.human.state === 'watching') {
+        this.strikes++; this.caught = 1.2; hit.wob = 0.5;
+        fx.pop(ix, sy - s * 2.4, pick(['CAUGHT', 'BAD CAT', 'I SAW THAT']), C.laser, clamp(s * 0.75, 18, 30));
+        if (this.strikes >= 3) { this.over = true; this.banished = true; }
+        return;
+      }
+      const k = KINDS[hit.kind];
+      this.items = this.items.filter(i => i !== hit);
+      this.falling.push({ slot: hit.slot, kind: hit.kind, x: ix, y: sy, vx: -rnd(20, 70) * (W / 600), vy: -rnd(120, 220) * (H / 400), rot: 0, vr: -rnd(3, 7) });
+      this.score += k.pts; this.swat = 0.22; this.swatX = ix;
+      fx.pop(ix, sy - k.h * s - s * 0.6, '+' + k.pts, C.eye, clamp(s * 0.6, 14, 24));
+    },
+    quip() {
+      if (this.banished) return 'Banished to the bathroom. Worth it.';
+      const s = this.score;
+      if (s === 0) return 'Nothing broken. The human is suspicious.';
+      if (s < 15) return 'Light chaos. The mug survives, for now.';
+      if (s < 35) return 'The shelf is mostly air. Fine work.';
+      return 'Gravity has been thoroughly tested.';
+    },
+    drawHuman() {
+      const u = unit();
+      const dx = W * 0.05, dw = W * 0.23, dy = H * 0.07, sy = this.shelfY();
+      ctx.fillStyle = C.night; ctx.fillRect(dx, dy, dw, sy - dy);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 4; ctx.strokeRect(dx, dy, dw, sy - dy);
+      const hx = dx + dw / 2, hr = clamp(u * 0.07, 18, 38), hy = dy + hr * 1.6;
+      ctx.fillStyle = C.shirt; rr(hx - hr * 1.5, hy + hr * 0.8, hr * 3, sy - hy - hr * 0.8, [hr * 0.6, hr * 0.6, 0, 0]); ctx.fill();
+      const st = this.human.state;
+      if (st === 'away') {
+        ctx.fillStyle = C.hair; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = C.skin; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = C.hair;
+        if (st === 'turning') {
+          ctx.beginPath(); ctx.arc(hx, hy, hr, Math.PI * 0.45, Math.PI * 1.75); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(hx + hr * 0.5, hy - hr * 0.05, hr * 0.12, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.arc(hx, hy, hr, Math.PI * 1.02, Math.PI * 1.98); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = C.ink;
+          for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(hx + side * hr * 0.38, hy + hr * 0.05, hr * 0.12, 0, Math.PI * 2); ctx.fill(); }
+          ctx.strokeStyle = C.ink; ctx.lineWidth = hr * 0.1; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(hx - hr * 0.6, hy - hr * 0.3); ctx.lineTo(hx - hr * 0.2, hy - hr * 0.15);
+          ctx.moveTo(hx + hr * 0.6, hy - hr * 0.3); ctx.lineTo(hx + hr * 0.2, hy - hr * 0.15); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(hx - hr * 0.25, hy + hr * 0.5); ctx.lineTo(hx + hr * 0.25, hy + hr * 0.5); ctx.stroke();
+        }
+        const bx = hx + hr * 1.05, by = hy - hr * 1.25, bs = hr * 0.95;
+        ctx.fillStyle = st === 'watching' ? C.laser : C.fur;
+        rr(bx, by, bs, bs, bs * 0.3); ctx.fill();
+        text(st === 'watching' ? '!' : '?', bx + bs / 2, by + bs / 2 + 1, bs * 0.75, st === 'watching' ? C.fur : C.ink);
+      }
+    },
+    draw() {
+      const s = this.s(), sy = this.shelfY();
+      ctx.fillStyle = C.panel; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = C.floor; ctx.fillRect(0, H * 0.94, W, H * 0.06);
+      const wx = W * 0.4, wy = H * 0.09, ww = W * 0.22, wh = H * 0.27;
+      ctx.fillStyle = C.night; ctx.fillRect(wx, wy, ww, wh);
+      ctx.fillStyle = C.fur; ctx.beginPath(); ctx.arc(wx + ww * 0.7, wy + wh * 0.32, Math.min(ww, wh) * 0.14, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = C.line; ctx.lineWidth = 4; ctx.strokeRect(wx, wy, ww, wh);
+      ctx.beginPath(); ctx.moveTo(wx + ww / 2, wy); ctx.lineTo(wx + ww / 2, wy + wh); ctx.moveTo(wx, wy + wh / 2); ctx.lineTo(wx + ww, wy + wh / 2); ctx.stroke();
+      this.drawHuman();
+      ctx.fillStyle = C.wood; ctx.fillRect(W * 0.03, sy, W * 0.94, s * 0.32);
+      for (const bx of [0.12, 0.62]) {
+        ctx.beginPath(); ctx.moveTo(W * bx, sy + s * 0.32); ctx.lineTo(W * bx + s * 0.6, sy + s * 0.32); ctx.lineTo(W * bx, sy + s * 0.95); ctx.closePath(); ctx.fill();
+      }
+      for (const it of this.items) {
+        let x = this.slotX(it.slot);
+        if (it.wob > 0) x += Math.sin(it.wob * 40) * 3;
+        drawItem(it.kind, x, sy, s, 0);
+      }
+      const cx = W * 0.87, cs = s * 0.95;
+      ctx.strokeStyle = C.marmalade; ctx.lineCap = 'round'; ctx.lineWidth = cs * 0.28;
+      ctx.beginPath(); ctx.moveTo(cx + cs * 0.6, sy - cs * 0.2);
+      ctx.quadraticCurveTo(cx + cs * 1.15, sy + cs * 0.4, cx + cs * 0.95, sy + cs * 1.6); ctx.stroke();
+      ctx.fillStyle = C.marmalade; ctx.beginPath(); ctx.ellipse(cx, sy - cs * 0.75, cs * 0.9, cs * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+      if (this.swat > 0) {
+        ctx.lineWidth = cs * 0.34;
+        ctx.beginPath(); ctx.moveTo(cx - cs * 0.5, sy - cs * 0.5); ctx.lineTo(this.swatX + s * 0.35, sy - s * 0.55); ctx.stroke();
+        drawPaw(this.swatX + s * 0.35, sy - s * 0.55, cs * 0.28, 1);
+      }
+      const hum = { x: W * 0.165, y: H * 0.2 };
+      drawCat(cx, sy - cs * 1.7, cs, { look: this.swat > 0 ? { x: this.swatX, y: sy } : hum, blink: this.caught > 0 });
+      for (const f of this.falling) drawItem(f.kind, f.x, f.y, s, f.rot);
+      if (this.human.state === 'watching') { ctx.strokeStyle = C.laser; ctx.lineWidth = 6; ctx.strokeRect(3, 3, W - 6, H - 6); }
+    }
+  };
+
+  /* ---------- Game 2: Laser Pounce ---------- */
+  const Laser = {
+    key: 'laser', title: 'Laser Pounce',
+    pitch: 'The red dot has mocked you for years. Tonight you catch it.',
+    rules: 'Tap or click the red dot to pounce. Every catch makes it faster, and the cat’s pupils get wider as it speeds up. Misses are counted. 25 seconds.',
+    reset() {
+      this.score = 0; this.time = 25; this.misses = 0; this.over = false; this.speed = 1;
+      this.dot = { x: W * 0.5, y: H * 0.3, tx: W * 0.5, ty: H * 0.3, pause: 0 };
+      this.target();
+    },
+    target() {
+      const d = this.dot;
+      d.tx = rnd(W * 0.06, W * 0.94); d.ty = rnd(H * 0.08, H * 0.58);
+      d.pause = Math.random() < 0.3 ? rnd(0.15, 0.5) : 0;
+    },
+    move(dt) {
+      const d = this.dot;
+      if (d.pause > 0) { d.pause -= dt; if (!calm) { d.x += rnd(-1, 1); d.y += rnd(-1, 1); } return; }
+      const sp = unit() * 0.55 * this.speed;
+      const dx = d.tx - d.x, dy = d.ty - d.y, dist = Math.hypot(dx, dy);
+      if (dist < sp * dt) { d.x = d.tx; d.y = d.ty; this.target(); }
+      else { d.x += dx / dist * sp * dt; d.y += dy / dist * sp * dt; }
+    },
+    idle(dt) { this.move(dt); },
+    update(dt) {
+      this.time -= dt;
+      if (this.time <= 0) { this.time = 0; this.over = true; }
+      this.move(dt);
+    },
+    tap(x, y) {
+      const d = this.dot, u = unit();
+      fx.paws.push({ x, y, r: u * 0.045, life: 0.6 });
+      if (Math.hypot(x - d.x, y - d.y) < Math.max(28, u * 0.06)) {
+        this.score++; this.speed = Math.min(2.6, this.speed * 1.09);
+        fx.pop(d.x, d.y - 26, pick(['GOT IT', 'POUNCE', 'MINE', 'HAH']), C.eye, 22);
+        fx.burst(d.x, d.y, 10, [C.laser, C.fur]);
+        d.x = rnd(W * 0.06, W * 0.94); d.y = rnd(H * 0.08, H * 0.58); this.target();
+      } else {
+        this.misses++;
+        fx.pop(x, y - 22, pick(['whiff', 'nope', 'so close', 'it was there']), C.muted, 16);
+      }
+    },
+    hud() { return [['Catches', this.score], ['Time', Math.ceil(this.time) + 's'], ['Misses', this.misses]]; },
+    quip() {
+      const s = this.score;
+      if (s === 0) return 'The dot remains free. You remain a houseplant.';
+      if (s < 8) return 'Respectable. The dot fears nothing yet.';
+      if (s < 16) return 'Certified pounce machine.';
+      return 'You caught the uncatchable. Physics is confused.';
+    },
+    draw() {
+      const u = unit();
+      ctx.fillStyle = C.floor; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
+      const row = H * 0.11;
+      for (let i = 1, y = row; y < H; i++, y += row) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        for (let x = (i % 2) * W * 0.17; x < W; x += W * 0.34) { ctx.beginPath(); ctx.moveTo(x, y - row); ctx.lineTo(x, y); ctx.stroke(); }
+      }
+      const cs = u * 0.13;
+      const pupil = 0.2 + 0.55 * clamp((this.speed - 1) / 1.4, 0, 1);
+      ctx.fillStyle = C.marmalade;
+      for (const side of [-1, 1]) { ctx.beginPath(); ctx.ellipse(W / 2 + side * cs * 1.15, H - cs * 0.1, cs * 0.32, cs * 0.24, 0, 0, Math.PI * 2); ctx.fill(); }
+      const blink = !calm && (performance.now() % 4200) < 130;
+      drawCat(W / 2, H - cs * 0.55, cs, { look: this.dot, pupil, blink });
+      const d = this.dot, gr = u * 0.05;
+      const g = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, gr);
+      g.addColorStop(0, C.laser); g.addColorStop(1, 'rgba(255,45,85,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(d.x, d.y, gr, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = C.laser; ctx.beginPath(); ctx.arc(d.x, d.y, Math.max(5, u * 0.013), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = C.fur; ctx.beginPath(); ctx.arc(d.x, d.y, Math.max(2, u * 0.005), 0, Math.PI * 2); ctx.fill();
+    }
+  };
+
+  /* ---------- Game 3: If It Fits, I Sits ---------- */
+  const GRADES = [
+    { max: 0.86, label: 'Loaf overflow', pts: 40, note: 'Half in. Fully committed.', sink: 0.12 },
+    { max: 0.97, label: 'Snug squish', pts: 90, note: 'Tight is right.', sink: 0.55 },
+    { max: 1.08, label: 'Perfect fit', pts: 100, note: 'If I fits, I sits.', sink: 0.72 },
+    { max: 1.2, label: 'Roomy', pts: 50, note: 'Acceptable. Will knead first.', sink: 0.9 },
+    { max: 99, label: 'Too much box', pts: 15, note: 'The cat sank. Only the ears remain.', sink: 1.35 }
+  ];
+  const Box = {
+    key: 'box', title: 'If It Fits, I Sits',
+    pitch: 'The box keeps changing size. Jump in when it fits just right.',
+    rules: 'The box grows and shrinks. Tap or click to jump in; the dashed lines show how wide the cat is. A perfect fit scores 100 and a snug squeeze 90, because cats like snug. An oversized box barely counts. Five boxes, each one faster.',
+    reset() { this.score = 0; this.round = 0; this.perfect = 0; this.over = false; this.newRound(); },
+    newRound() { this.cat = rnd(0.82, 1); this.speed = 1.7 + this.round * 0.5; this.t = rnd(0, 10); this.state = 'swing'; this.drop = 0; this.hold = 0; this.result = null; },
+    ratio() { return 0.72 + 0.62 * (0.5 + 0.5 * Math.sin(this.t * this.speed)); },
+    idle(dt) { if (this.state === 'swing') this.t += dt * 0.6; },
+    update(dt) {
+      if (this.state === 'swing') { this.t += dt; return; }
+      this.drop = Math.min(1, this.drop + dt * 3.2);
+      this.hold -= dt;
+      if (this.hold <= 0) {
+        this.round++;
+        if (this.round >= 5) { this.round = 5; this.over = true; } else this.newRound();
+      }
+    },
+    tap() {
+      if (this.state !== 'swing') return;
+      const r = this.ratio(), g = GRADES.find(gr => r <= gr.max);
+      this.result = Object.assign({ r }, g);
+      this.score += g.pts;
+      if (g.pts === 100) this.perfect++;
+      this.state = 'result'; this.hold = 1.5; this.drop = 0;
+      fx.pop(W / 2, H * 0.3, '+' + g.pts, C.eye, 24);
+    },
+    hud() { return [['Score', this.score], ['Box', Math.min(this.round + 1, 5) + ' / 5'], ['Perfect', this.perfect]]; },
+    quip() {
+      const s = this.score;
+      if (s < 200) return 'The boxes were all wrong. Obviously.';
+      if (s < 350) return 'Decent sits. Some loafing.';
+      if (s < 460) return 'Elite box judge.';
+      return 'Flawless. Every box claimed.';
+    },
+    draw() {
+      const u = unit();
+      ctx.fillStyle = C.panel; ctx.fillRect(0, 0, W, H);
+      const floorY = H * 0.86;
+      ctx.fillStyle = C.floor; ctx.fillRect(0, floorY, W, H - floorY);
+      const catW = u * 0.3 * this.cat, catH = catW * 0.5;
+      const r = this.state === 'swing' ? this.ratio() : this.result.r;
+      const boxW = catW * r, boxH = catW * 0.42, bx = W / 2, boxTop = floorY - boxH, L = bx - boxW / 2, R = bx + boxW / 2;
+      const fh = boxH * 0.6;
+      const hover = boxTop - fh - catH * 0.15 + (calm ? 0 : Math.sin(performance.now() / 300) * 3);
+      let catBottom = hover;
+      if (this.state === 'result') {
+        const e = 1 - Math.pow(1 - this.drop, 3);
+        catBottom = hover + (boxTop + catH * this.result.sink - hover) * e;
+      }
+      if (this.state === 'swing') {
+        ctx.setLineDash([6, 6]); ctx.strokeStyle = C.muted; ctx.lineWidth = 1.5;
+        for (const x of [bx - catW / 2, bx + catW / 2]) { ctx.beginPath(); ctx.moveTo(x, hover - catH * 0.3); ctx.lineTo(x, floorY); ctx.stroke(); }
+        ctx.setLineDash([]);
+      }
+      ctx.fillStyle = C.boxDark; ctx.fillRect(L, boxTop - boxH * 0.1, boxW, boxH * 0.1);
+      ctx.fillStyle = C.box; ctx.strokeStyle = C.boxDark; ctx.lineWidth = 2;
+      for (const [x0, dir] of [[L, -1], [R, 1]]) {
+        ctx.beginPath(); ctx.moveTo(x0, boxTop); ctx.lineTo(x0 + dir * fh * 0.55, boxTop - fh * 0.75);
+        ctx.lineTo(x0 + dir * fh * 0.35, boxTop - fh * 0.9); ctx.lineTo(x0 - dir * fh * 0.15, boxTop - boxH * 0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      const happy = this.result && this.result.pts >= 90;
+      const shocked = this.result && this.result.pts < 20;
+      drawLoaf(bx, catBottom, catW, { blink: happy && this.drop >= 1, pupil: shocked ? 0.8 : 0.3, look: { x: bx, y: floorY } });
+      ctx.fillStyle = C.box; ctx.strokeStyle = C.boxDark; ctx.lineWidth = 2; ctx.fillRect(L, boxTop, boxW, boxH); ctx.strokeRect(L, boxTop, boxW, boxH);
+      ctx.fillStyle = C.fur; ctx.globalAlpha = 0.35; ctx.fillRect(bx - boxW * 0.05, boxTop, boxW * 0.1, boxH * 0.45); ctx.globalAlpha = 1;
+      if (boxW > 90) text('THIS SIDE UP', bx, boxTop + boxH * 0.7, Math.max(9, boxH * 0.17), C.boxDark, null, BODY);
+      if (this.result) {
+        text(this.result.label, W / 2, H * 0.1, clamp(u * 0.065, 20, 34), C.marmalade, C.night);
+        wrapText(this.result.note, W / 2, H * 0.1 + clamp(u * 0.065, 20, 34) * 0.95, W * 0.8, clamp(u * 0.03, 13, 17), C.fur);
+      }
+    }
+  };
+
+  /* ---------- Game 4: Catch the Sun ---------- */
+  const Sun = {
+    key: 'sun', title: 'Catch the Sun',
+    pitch: 'Find the warm patch of sunlight on the floor. Stay in it as long as you can.',
+    rules: 'Walk the cat into the patch of sunlight and stay there. Point, drag or tap where you want to go, or use the arrow keys. The sun drifts across the floor, and when a cloud passes the patch disappears and comes back somewhere else, so go find it. Every time it comes back, it moves faster. Out of the sun the cat gets cold; when Warmth hits zero, the nap is over. 10 points for every second in the sun. It gets harder the longer you last.',
+    reset() {
+      this.score = 0; this.sunT = 0; this.time = 0; this.warmth = 1; this.over = false;
+      this.inSun = false; this.face = 1; this.moving = false; this.step = 0; this.chirp = 1.2;
+      this.keys = {}; this.target = null;
+      this.cat = { x: W * 0.5, y: H * 0.86 };
+      this.spot = { x: W * 0.5, y: H * 0.6, ang: rnd(0, Math.PI * 2), a: 1, phase: 'on', t: rnd(5, 7), level: 0 };
+    },
+    bounds() { return { l: W * 0.08, r: W * 0.92, t: H * 0.44, b: H * 0.93 }; },
+    diff() { return clamp(this.time / 75, 0, 1); },
+    // Each time the sun comes back from behind a cloud it drifts 25% faster, capped near the cat's walking speed.
+    spotSpeed() { return Math.min(0.3, 0.06 * Math.pow(1.25, this.spot.level)); },
+    rx() { return unit() * (0.17 - 0.08 * this.diff()); },
+    scaleAt(y) { const fy = H * 0.34; return 0.7 + 0.4 * clamp((y - fy) / (H - fy), 0, 1); },
+    hud() { return [['Score', this.score], ['Warmth', Math.ceil(this.warmth * 100) + '%'], ['Sun speed', '×' + (this.spotSpeed() / 0.06).toFixed(1)]]; },
+    aim(x, y) { this.target = { x, y }; },
+    tap(x, y) { this.aim(x, y); },
+    steer(k, down) {
+      const map = { ArrowLeft: 'l', a: 'l', A: 'l', ArrowRight: 'r', d: 'r', D: 'r', ArrowUp: 'u', w: 'u', W: 'u', ArrowDown: 'dn', s: 'dn', S: 'dn' };
+      if (!map[k]) return false;
+      this.keys[map[k]] = down;
+      if (down) this.target = null;
+      return true;
+    },
+    moveSpot(dt, d) {
+      const s = this.spot, b = this.bounds(), rx = this.rx(), ry = rx * 0.42;
+      const sp = unit() * this.spotSpeed();
+      s.ang += rnd(-1.2, 1.2) * dt;
+      s.x += Math.cos(s.ang) * sp * dt; s.y += Math.sin(s.ang) * sp * dt * 0.6;
+      if (s.x < b.l + rx || s.x > b.r - rx) { s.ang = Math.PI - s.ang; s.x = clamp(s.x, b.l + rx, b.r - rx); }
+      if (s.y < b.t + ry || s.y > b.b - ry) { s.ang = -s.ang; s.y = clamp(s.y, b.t + ry, b.b - ry); }
+    },
+    clouds(dt, d) {
+      const s = this.spot;
+      s.t -= dt;
+      if (s.phase === 'on') {
+        if (s.t <= 0) { s.phase = 'fading'; s.t = 0.6; }
+      } else if (s.phase === 'fading') {
+        s.a = clamp(s.t / 0.6, 0, 1);
+        if (s.t <= 0) { s.phase = 'gone'; s.a = 0; s.t = rnd(0.6, 1.1) + 0.9 * d; }
+      } else if (s.phase === 'gone') {
+        if (s.t <= 0) {
+          const b = this.bounds(), rx = this.rx(), ry = rx * 0.42;
+          let x, y, tries = 0;
+          do {
+            x = rnd(b.l + rx, b.r - rx); y = rnd(b.t + ry, b.b - ry); tries++;
+          } while (Math.hypot(x - this.cat.x, (y - this.cat.y) * 1.6) < unit() * 0.3 && tries < 20);
+          s.x = x; s.y = y; s.ang = rnd(0, Math.PI * 2);
+          s.phase = 'appearing'; s.t = 0.45; s.level++;
+          fx.pop(x, y - ry - 14, this.spotSpeed() >= 0.3 ? 'top speed' : 'faster', C.sun, 17);
+        }
+      } else {
+        s.a = 1 - clamp(s.t / 0.45, 0, 1);
+        if (s.t <= 0) { s.phase = 'on'; s.a = 1; s.t = Math.max(2.2, rnd(4.5, 7) - 3 * d); }
+      }
+    },
+    walk(dt) {
+      const c = this.cat, b = this.bounds(), sp = unit() * 0.42 * this.scaleAt(c.y);
+      let dx = 0, dy = 0;
+      const k = this.keys;
+      if (k.l || k.r || k.u || k.dn) {
+        dx = (k.r ? 1 : 0) - (k.l ? 1 : 0); dy = (k.dn ? 1 : 0) - (k.u ? 1 : 0);
+        const n = Math.hypot(dx, dy) || 1; dx /= n; dy /= n;
+      } else if (this.target) {
+        const tx = clamp(this.target.x, b.l, b.r), ty = clamp(this.target.y, b.t, b.b);
+        const ddx = tx - c.x, ddy = ty - c.y, dist = Math.hypot(ddx, ddy);
+        if (dist > sp * dt) { dx = ddx / dist; dy = ddy / dist; }
+        else { c.x = tx; c.y = ty; }
+      }
+      this.moving = dx !== 0 || dy !== 0;
+      if (this.moving) {
+        c.x = clamp(c.x + dx * sp * dt, b.l, b.r);
+        c.y = clamp(c.y + dy * sp * dt * 0.75, b.t, b.b);
+        if (Math.abs(dx) > 0.15) this.face = dx > 0 ? 1 : -1;
+        this.step += dt;
+      }
+    },
+    sunny() {
+      const s = this.spot, c = this.cat, rx = this.rx(), ry = rx * 0.42;
+      return s.a >= 0.5 && ((c.x - s.x) / rx) ** 2 + ((c.y - s.y) / ry) ** 2 <= 1;
+    },
+    idle(dt) { this.moveSpot(dt, 0); },
+    update(dt) {
+      const d = this.diff();
+      this.time += dt;
+      this.moveSpot(dt, d);
+      this.clouds(dt, d);
+      this.walk(dt);
+      const was = this.inSun;
+      this.inSun = this.sunny();
+      if (this.inSun) {
+        this.sunT += dt; this.score = Math.floor(this.sunT * 10);
+        this.warmth = Math.min(1, this.warmth + 0.35 * dt);
+      } else {
+        this.warmth -= (0.16 + 0.14 * d) * dt;
+      }
+      const head = this.cat.y - unit() * 0.13 * this.scaleAt(this.cat.y) * 0.75;
+      if (this.inSun && !was) fx.pop(this.cat.x, head, pick(['ahh', 'warm', 'yes']), C.sun, 18);
+      this.chirp -= dt;
+      if (this.chirp <= 0) {
+        this.chirp = rnd(1.4, 2.2);
+        if (this.inSun) fx.pop(this.cat.x, head, pick(['purr', 'prrr', 'mrrp']), C.sun, 16);
+        else if (this.warmth < 0.5) fx.pop(this.cat.x, head, pick(['brr', 'cold', 'where did it go']), C.vase, 16);
+      }
+      if (this.warmth <= 0) { this.warmth = 0; this.over = true; }
+    },
+    quip() {
+      const s = this.score;
+      if (s < 50) return 'Barely warm. The floor is cold and so is your heart.';
+      if (s < 200) return 'A decent sunbath. Fur: lightly toasted.';
+      if (s < 450) return 'Professional napper. The sun owes you rent.';
+      return 'You chased the sun all afternoon and never let go.';
+    },
+    draw() {
+      const u = unit(), s = this.spot, c = this.cat, fy = H * 0.34;
+      const rx = this.rx(), ry = rx * 0.42;
+      // wall
+      ctx.fillStyle = C.panel; ctx.fillRect(0, 0, W, fy);
+      ctx.fillStyle = C.wood; ctx.fillRect(0, fy - H * 0.025, W, H * 0.025);
+      // window with sky, sun and passing cloud
+      const ww = W * 0.22, wh = fy * 0.66, wx = W / 2 - ww / 2, wy = fy * 0.12;
+      ctx.fillStyle = C.vase; ctx.fillRect(wx, wy, ww, wh);
+      const sunR = Math.min(ww, wh) * 0.2;
+      ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(wx + ww * 0.68, wy + wh * 0.36, sunR, 0, Math.PI * 2); ctx.fill();
+      const cover = 1 - s.a;
+      if (cover > 0) {
+        ctx.globalAlpha = Math.min(1, cover * 1.4); ctx.fillStyle = C.fur;
+        const cx0 = wx + ww * 0.68, cy0 = wy + wh * 0.4;
+        for (const [ox, oy, r] of [[-0.9, 0.1, 0.8], [0, -0.25, 1.05], [0.95, 0.1, 0.8], [0, 0.35, 0.9]]) {
+          ctx.beginPath(); ctx.arc(cx0 + ox * sunR, cy0 + oy * sunR, r * sunR, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.strokeStyle = C.wood; ctx.lineWidth = 5; ctx.strokeRect(wx, wy, ww, wh);
+      ctx.lineWidth = 3; ctx.beginPath();
+      ctx.moveTo(wx + ww / 2, wy); ctx.lineTo(wx + ww / 2, wy + wh); ctx.moveTo(wx, wy + wh / 2); ctx.lineTo(wx + ww, wy + wh / 2); ctx.stroke();
+      // floor planks in perspective
+      ctx.fillStyle = C.floor; ctx.fillRect(0, fy, W, H - fy);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
+      for (let i = -6; i <= 6; i++) {
+        ctx.beginPath(); ctx.moveTo(W / 2 + i * W * 0.06, fy); ctx.lineTo(W / 2 + i * W * 0.17, H); ctx.stroke();
+      }
+      for (const t of [0.12, 0.3, 0.55, 0.85]) {
+        const y = fy + (H - fy) * t; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+      // light shaft and sun patch
+      if (s.a > 0) {
+        ctx.globalAlpha = 0.13 * s.a; ctx.fillStyle = C.sun;
+        ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx + ww, wy); ctx.lineTo(s.x + rx, s.y); ctx.lineTo(s.x - rx, s.y); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = s.a;
+        ctx.save(); ctx.translate(s.x, s.y); ctx.scale(1, ry / rx);
+        const g = ctx.createRadialGradient(0, 0, rx * 0.1, 0, 0, rx);
+        g.addColorStop(0, 'rgba(255, 236, 160, 0.95)'); g.addColorStop(0.8, 'rgba(255, 214, 90, 0.75)'); g.addColorStop(1, 'rgba(255, 190, 70, 0.55)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        // window-pane cross inside the patch
+        ctx.strokeStyle = C.floor; ctx.lineWidth = Math.max(2, rx * 0.05); ctx.globalAlpha = 0.35 * s.a;
+        ctx.beginPath(); ctx.moveTo(s.x, s.y - ry); ctx.lineTo(s.x, s.y + ry); ctx.moveTo(s.x - rx, s.y); ctx.lineTo(s.x + rx, s.y); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      // cloud shadow
+      if (cover > 0) { ctx.globalAlpha = cover * 0.22; ctx.fillStyle = C.night; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+      // cat
+      const sc = this.scaleAt(c.y), cw = u * 0.13 * sc;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath(); ctx.ellipse(c.x, c.y, cw * 0.62, cw * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+      let jx = 0, bob = 0;
+      if (this.moving && !calm) bob = -Math.abs(Math.sin(this.step * 12)) * cw * 0.06;
+      if (!this.inSun && this.warmth < 0.35 && !calm) jx = Math.sin(performance.now() / 25) * cw * 0.025;
+      ctx.save(); ctx.translate(c.x + jx, 0); ctx.scale(this.face, 1);
+      drawLoaf(0, c.y + bob, cw, { blink: this.inSun, pupil: this.inSun ? 0.25 : 0.55 });
+      ctx.restore();
+      // warmth meter
+      const mw = clamp(W * 0.24, 80, 200), mh = 10, mx = 14, my = 30;
+      ctx.fillStyle = C.night; rr(mx, my, mw, mh, mh / 2); ctx.fill();
+      ctx.fillStyle = this.warmth > 0.35 ? C.sun : C.laser;
+      rr(mx, my, Math.max(mh, mw * this.warmth), mh, mh / 2); ctx.fill();
+      text('Warmth', mx, my - 10, 13, C.fur, null, BODY, 'left');
+      if (this.inSun) { ctx.strokeStyle = C.sun; ctx.globalAlpha = 0.6; ctx.lineWidth = 4; ctx.strokeRect(2, 2, W - 4, H - 4); ctx.globalAlpha = 1; }
+    }
+  };
+
+  /* ---------- Game 5: Dry Paws ---------- */
+  function drawFish(x, y, s) {
+    ctx.fillStyle = C.vase;
+    ctx.beginPath(); ctx.moveTo(x - s * 0.7, y); ctx.lineTo(x - s * 1.35, y - s * 0.5); ctx.lineTo(x - s * 1.35, y + s * 0.5); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y, s, s * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(x + s * 0.5, y - s * 0.1, Math.max(1, s * 0.12), 0, Math.PI * 2); ctx.fill();
+  }
+  const River = {
+    key: 'river', title: 'Dry Paws',
+    pitch: 'Cats hate water. Hop across the logs and keep those paws dry.',
+    rules: 'Get the cat from the bottom bank to the sunny spot at the top without touching the water. Tap or click where you want to hop, swipe, or use the arrow keys or WASD. Logs carry you sideways, so don’t ride one off the edge. Each new row scores 1, reaching the sunny spot scores 10, and fish on the logs are worth 5. The river speeds up after every crossing. 60 seconds.',
+    ROWS: 9, SAND: 4,
+    reset() {
+      this.score = 0; this.time = 60; this.crossings = 0; this.splashes = 0; this.over = false; this.level = 0;
+      this.cols = clamp(Math.floor(W / (H / this.ROWS)), 7, 15);
+      this.makeLanes(); this.spawn(); this.maxRow = 0;
+    },
+    geo() { const cell = Math.min(H / this.ROWS, W / this.cols); return { cell, left: (W - this.cols * cell) / 2, top: (H - this.ROWS * cell) / 2 }; },
+    isRiver(r) { return r > 0 && r < this.ROWS - 1 && r !== this.SAND; },
+    rowY(r, g) { return g.top + (this.ROWS - 1 - r) * g.cell; },
+    makeLanes() {
+      this.lanes = {};
+      const boost = 1 + this.level * 0.13, maxGap = Math.max(1.5, 3.2 - this.level * 0.15);
+      let dir = Math.random() < 0.5 ? 1 : -1;
+      for (let r = 1; r < this.ROWS - 1; r++) {
+        if (!this.isRiver(r)) continue;
+        dir = -dir;
+        const logs = []; let x = -5;
+        while (x < this.cols + 5) { const len = 2 + Math.floor(Math.random() * 3); logs.push({ x, len, fish: null }); x += len + rnd(1.2, maxGap); }
+        this.lanes[r] = { dir, speed: rnd(0.8, 1.9) * boost, logs, T: x + 5 };
+      }
+      const rows = Object.keys(this.lanes);
+      for (let i = 0; i < 2; i++) { const lg = pick(this.lanes[pick(rows)].logs); lg.fish = Math.floor(Math.random() * lg.len); }
+    },
+    spawn() { this.cat = { x: Math.floor(this.cols / 2), row: 0, hop: null, wet: 0 }; },
+    moveLogs(dt) {
+      for (const r in this.lanes) {
+        const L = this.lanes[r];
+        for (const lg of L.logs) { lg.x += L.dir * L.speed * dt; lg.x = ((lg.x + 5) % L.T + L.T) % L.T - 5; }
+      }
+    },
+    logUnder(row, cx) {
+      const L = this.lanes[row];
+      return L ? L.logs.find(lg => cx >= lg.x - 0.2 && cx <= lg.x + lg.len + 0.2) || null : null;
+    },
+    catPos(g) {
+      const c = this.cat;
+      if (!c.hop) return { x: g.left + (c.x + 0.5) * g.cell, y: this.rowY(c.row, g) + g.cell / 2, lift: 0 };
+      const t = Math.min(1, c.hop.t), x = c.hop.fx + (c.hop.tx - c.hop.fx) * t, r = c.hop.fr + (c.hop.tr - c.hop.fr) * t;
+      return { x: g.left + (x + 0.5) * g.cell, y: g.top + (this.ROWS - 1 - r) * g.cell + g.cell / 2, lift: Math.sin(Math.PI * t) * g.cell * 0.25 };
+    },
+    idle(dt) { this.moveLogs(dt); },
+    move(dir) {
+      const c = this.cat;
+      if (c.hop || c.wet > 0) return;
+      let x = c.x, row = c.row;
+      if (dir === 'up') row++; else if (dir === 'down') row--; else if (dir === 'left') x--; else x++;
+      if (row < 0 || row >= this.ROWS) return;
+      x = clamp(x, 0, this.cols - 1);
+      if (!this.isRiver(row)) x = Math.round(x);
+      if (x === c.x && row === c.row) return;
+      c.hop = { fx: c.x, fr: c.row, tx: x, tr: row, t: 0 };
+    },
+    tap(x, y) {
+      const p = this.catPos(this.geo()), g = this.geo();
+      const dx = x - p.x, dy = y - p.y;
+      if (Math.abs(dx) < g.cell * 0.35 && Math.abs(dy) < g.cell * 0.35) return;
+      this.move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy < 0 ? 'up' : 'down'));
+    },
+    splash(msg) {
+      const g = this.geo(), p = this.catPos(g);
+      fx.burst(p.x, p.y, 16, [C.waterHi, C.fur, C.vase]);
+      fx.pop(p.x, p.y - g.cell * 0.7, msg, C.fur, clamp(g.cell * 0.55, 14, 26));
+      this.splashes++; this.cat.wet = 0.8; this.cat.hop = null;
+    },
+    grabFish() {
+      const c = this.cat, lg = this.logUnder(c.row, c.x + 0.5);
+      if (lg && lg.fish !== null && Math.abs(c.x - (lg.x + lg.fish)) < 0.7) {
+        lg.fish = null; this.score += 5;
+        const g = this.geo(), p = this.catPos(g);
+        fx.pop(p.x, p.y - g.cell * 0.7, '+5 FISH', C.eye, clamp(g.cell * 0.5, 14, 24));
+      }
+    },
+    land() {
+      const c = this.cat;
+      if (this.isRiver(c.row) && !this.logUnder(c.row, c.x + 0.5)) { this.splash(pick(['SPLASH', 'PLOP', 'BLUB', 'SO WET'])); return; }
+      if (c.row > this.maxRow) { this.score += c.row - this.maxRow; this.maxRow = c.row; }
+      if (c.row === this.ROWS - 1) {
+        const g = this.geo(), p = this.catPos(g);
+        this.crossings++; this.score += 10; this.level++;
+        fx.pop(p.x, p.y + g.cell * 0.2, 'DRY! +10', C.eye, clamp(g.cell * 0.6, 16, 28));
+        this.makeLanes(); this.spawn(); this.maxRow = 0;
+        return;
+      }
+      this.grabFish();
+    },
+    update(dt) {
+      this.time -= dt;
+      if (this.time <= 0) { this.time = 0; this.over = true; }
+      this.moveLogs(dt);
+      const c = this.cat;
+      if (c.wet > 0) { c.wet -= dt; if (c.wet <= 0) this.spawn(); return; }
+      if (c.hop) {
+        const L = this.lanes[c.hop.tr];
+        if (L) c.hop.tx += L.dir * L.speed * dt;
+        c.hop.t += dt / 0.13;
+        if (c.hop.t >= 1) { c.x = c.hop.tx; c.row = c.hop.tr; c.hop = null; this.land(); }
+        return;
+      }
+      const L = this.lanes[c.row];
+      if (L) {
+        c.x += L.dir * L.speed * dt;
+        if (c.x + 0.5 < 0 || c.x + 0.5 > this.cols) { this.splash('SWEPT AWAY'); return; }
+        this.grabFish();
+      }
+    },
+    hud() { return [['Score', this.score], ['Time', Math.ceil(this.time) + 's'], ['Crossings', this.crossings]]; },
+    quip() {
+      if (this.crossings > 0 && this.splashes === 0) return 'Not one wet paw. Legendary.';
+      const s = this.score;
+      if (s === 0) return 'Refused to go near the water. Respect.';
+      if (s < 30) return 'Damp, offended, but alive.';
+      if (s < 90) return 'Professional log hopper.';
+      return 'The river fears this cat.';
+    },
+    draw() {
+      const g = this.geo(), { cell, left, top } = g, R = this.ROWS, bw = this.cols * cell, now = performance.now() / 1000;
+      ctx.fillStyle = C.night; ctx.fillRect(0, 0, W, H);
+      for (let r = 0; r < R; r++) {
+        ctx.fillStyle = this.isRiver(r) ? C.water : r === this.SAND ? C.sand : C.grass;
+        ctx.fillRect(left, this.rowY(r, g), bw, cell + 0.5);
+      }
+      ctx.save(); ctx.beginPath(); ctx.rect(left, top, bw, R * cell); ctx.clip();
+      if (!calm) {
+        ctx.strokeStyle = C.waterHi; ctx.lineWidth = Math.max(1, cell * 0.05); ctx.lineCap = 'round';
+        for (const r in this.lanes) {
+          const L = this.lanes[r], y = this.rowY(+r, g);
+          for (let i = 0; i < this.cols; i += 2) {
+            const fxp = (((i * 1.7 + now * L.dir * L.speed * 0.5) % this.cols) + this.cols) % this.cols;
+            const yy = y + cell * (0.25 + (i % 3) * 0.25);
+            ctx.beginPath(); ctx.moveTo(left + fxp * cell, yy); ctx.lineTo(left + fxp * cell + cell * 0.35, yy); ctx.stroke();
+          }
+        }
+      }
+      ctx.fillStyle = C.sun; ctx.beginPath(); ctx.ellipse(left + bw / 2, top + cell / 2, Math.min(bw * 0.3, cell * 3), cell * 0.36, 0, 0, Math.PI * 2); ctx.fill();
+      text('SUNNY SPOT', left + bw / 2, top + cell / 2 + 1, clamp(cell * 0.3, 10, 16), C.ink, null, BODY);
+      for (const r in this.lanes) {
+        const L = this.lanes[r], y = this.rowY(+r, g);
+        for (const lg of L.logs) {
+          const x = left + lg.x * cell, w = lg.len * cell;
+          if (x > left + bw || x + w < left) continue;
+          ctx.fillStyle = C.wood; rr(x + cell * 0.04, y + cell * 0.14, w - cell * 0.08, cell * 0.72, cell * 0.3); ctx.fill();
+          ctx.strokeStyle = C.bark; ctx.lineWidth = Math.max(1, cell * 0.05); ctx.lineCap = 'round';
+          for (let k = 0; k < lg.len; k++) {
+            ctx.beginPath(); ctx.moveTo(x + (k + 0.2) * cell, y + cell * 0.36); ctx.lineTo(x + (k + 0.6) * cell, y + cell * 0.36);
+            ctx.moveTo(x + (k + 0.45) * cell, y + cell * 0.64); ctx.lineTo(x + (k + 0.85) * cell, y + cell * 0.64); ctx.stroke();
+          }
+          ctx.fillStyle = C.box; ctx.beginPath(); ctx.ellipse(x + w - cell * 0.2, y + cell / 2, cell * 0.13, cell * 0.33, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = C.bark; ctx.beginPath(); ctx.ellipse(x + w - cell * 0.2, y + cell / 2, cell * 0.06, cell * 0.17, 0, 0, Math.PI * 2); ctx.stroke();
+          if (lg.fish !== null) drawFish(x + (lg.fish + 0.5) * cell, y + cell / 2, cell * 0.22);
+        }
+      }
+      ctx.restore();
+      const c = this.cat, p = this.catPos(g), s = cell * 0.34;
+      const scale = 1 + (p.lift / cell) * 0.6;
+      if (c.wet > 0) ctx.globalAlpha = clamp(c.wet / 0.8, 0.2, 1);
+      ctx.strokeStyle = C.marmalade; ctx.lineWidth = s * 0.28; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(p.x + s * 0.5, p.y - p.lift + s * 0.6); ctx.quadraticCurveTo(p.x + s * 1.3, p.y - p.lift + s * 0.5, p.x + s * 1.2, p.y - p.lift - s * 0.2); ctx.stroke();
+      drawCat(p.x, p.y - p.lift, s * scale, { blink: c.wet > 0, look: { x: p.x, y: p.y - cell * 3 } });
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  /* ---------- shell ---------- */
+  const GAMES = { knock: Knock, laser: Laser, box: Box, sun: Sun, river: River };
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const hudEls = [0, 1, 2, 3].map(i => [document.getElementById('l' + i), document.getElementById('v' + i)]);
+  let cur = Knock, phase = 'ready', endAt = 0, newBest = false, hudSig = '';
+
+  /* ---------- leaderboard ---------- */
+  const API = '/api/scores';
+  const form = document.getElementById('submit-form'), nick = document.getElementById('nick');
+  const submitScore = document.getElementById('submit-score'), submitMsg = document.getElementById('submit-msg'), submitBtn = document.getElementById('submit-btn');
+  const boardTitle = document.getElementById('board-title'), boardList = document.getElementById('board-list'), boardMsg = document.getElementById('board-msg');
+  let boardReq = 0, pending = null;
+  try { nick.value = localStorage.getItem('nine-lives-nick') || ''; } catch (e) {}
+
+  function say(el, msg, isErr) { el.textContent = msg; el.className = 'msg' + (isErr ? ' err' : ''); }
+  function renderBoard(scores, mine) {
+    boardList.textContent = '';
+    if (!scores.length) { say(boardMsg, 'No scores yet. Finish a round to take first place.'); return; }
+    say(boardMsg, '');
+    scores.forEach((s, i) => {
+      const li = document.createElement('li');
+      if (mine === i + 1) li.className = 'me';
+      const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = '#' + (i + 1);
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s.name;
+      const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = s.score;
+      li.append(rk, nm, sc); boardList.append(li);
+    });
+  }
+  async function loadBoard(key) {
+    const id = ++boardReq;
+    boardTitle.textContent = 'Top 10: ' + GAMES[key].title;
+    boardList.textContent = ''; say(boardMsg, 'Loading scores…');
+    try {
+      const r = await fetch(API + '?game=' + key, { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      if (id === boardReq) renderBoard(d.scores || []);
+    } catch (e) {
+      if (id === boardReq) say(boardMsg, 'The leaderboard is offline right now. Your personal best is still saved on this device.', true);
+    }
+  }
+  function offerSubmit(key, score) {
+    pending = { key, score };
+    submitScore.textContent = score; say(submitMsg, ''); submitBtn.disabled = false;
+    form.hidden = false;
+  }
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!pending) return;
+    const name = nick.value.trim();
+    if (!name) { say(submitMsg, 'Type a nickname first.', true); return; }
+    try { localStorage.setItem('nine-lives-nick', name); } catch (err) {}
+    const entry = pending;
+    submitBtn.disabled = true; say(submitMsg, 'Saving…');
+    try {
+      const r = await fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ game: entry.key, name, score: entry.score }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { say(submitMsg, d.error || 'Your score was not saved. Try again.', true); submitBtn.disabled = false; return; }
+      if (pending === entry) pending = null;
+      say(submitMsg, d.rank && d.rank <= 10 ? 'Saved. You are #' + d.rank + '!' : d.rank ? 'Saved at #' + d.rank + '. The top 10 needs a little more chaos.' : 'Saved, but it did not make the top 50 this time.');
+      if (entry.key === cur.key) { boardReq++; boardTitle.textContent = 'Top 10: ' + cur.title; renderBoard(d.scores || [], d.rank); }
+    } catch (err) {
+      say(submitMsg, 'Could not reach the leaderboard. Check your connection and try again.', true); submitBtn.disabled = false;
+    }
+  });
+
+  function select(key) {
+    if (!GAMES[key]) key = 'knock';
+    cur = GAMES[key]; phase = 'ready'; fx.reset(); cur.reset(); hudSig = '';
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.game === key)));
+    document.getElementById('rules-title').textContent = 'How to play ' + cur.title;
+    document.getElementById('rules').textContent = cur.rules;
+    form.hidden = true;
+    loadBoard(key);
+  }
+  function start() { fx.reset(); cur.reset(); phase = 'play'; newBest = false; }
+  function end() {
+    phase = 'over'; endAt = performance.now();
+    if (cur.score > best.get(cur.key)) { best.set(cur.key, cur.score); newBest = cur.score > 0; }
+    if (cur.score > 0) offerSubmit(cur.key, cur.score);
+  }
+  function canStart() { return phase === 'ready' || (phase === 'over' && performance.now() - endAt > 700); }
+
+  let swipe = null;
+  const pos = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  canvas.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const { x, y } = pos(e);
+    if (phase === 'play') { if (cur.move) swipe = { x, y }; else cur.tap(x, y); }
+    else if (canStart()) start();
+  });
+  canvas.addEventListener('pointerup', e => {
+    if (!swipe) return;
+    const { x, y } = pos(e), s = swipe; swipe = null;
+    if (phase !== 'play' || !cur.move) return;
+    const dx = x - s.x, dy = y - s.y;
+    if (Math.hypot(dx, dy) > 24) cur.move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    else cur.tap(x, y);
+  });
+  canvas.addEventListener('pointercancel', () => { swipe = null; });
+  const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
+  document.addEventListener('keydown', e => {
+    const dir = KEYS[e.key];
+    if (!dir || !cur.move || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    e.preventDefault();
+    if (phase === 'play') cur.move(dir);
+    else if (canStart()) start();
+  });
+  canvas.addEventListener('keydown', e => {
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    e.preventDefault();
+    if (phase === 'play' && cur === Box) cur.tap();
+    else if (phase !== 'play' && canStart()) start();
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    if (phase !== 'play' || !cur.aim) return;
+    if (e.pointerType !== 'mouse' && !e.buttons) return;
+    const r = canvas.getBoundingClientRect();
+    cur.aim(e.clientX - r.left, e.clientY - r.top);
+  });
+  canvas.addEventListener('keyup', e => { if (typeof cur.steer === 'function') cur.steer(e.key, false); });
+  canvas.addEventListener('blur', () => { if (cur.keys) cur.keys = {}; });
+  canvas.addEventListener('keydown', e => {
+    if (phase === 'play' && typeof cur.steer === 'function' && cur.steer(e.key, true)) { e.preventDefault(); return; }
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    e.preventDefault();
+    if (phase === 'play' && cur === Box) cur.tap();
+    else if (phase !== 'play' && canStart()) start();
+  });
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    const k = tab.dataset.game;
+    if (location.hash === '#' + k) select(k); else location.hash = k;
+  }));
+  window.addEventListener('hashchange', () => select(location.hash.slice(1)));
+  window.addEventListener('resize', resize);
+
+  function overlay() {
+    ctx.fillStyle = C.scrim; ctx.fillRect(0, 0, W, H);
+    const cx = W / 2, big = clamp(W * 0.075, 26, 48), small = clamp(W * 0.032, 14, 18), maxW = Math.min(W * 0.82, 460);
+    if (phase === 'ready') {
+      text(cur.title, cx, H * 0.32, big, C.marmalade, C.night);
+      wrapText(cur.pitch, cx, H * 0.32 + big * 0.95, maxW, small, C.fur);
+      text(tapWord + ' to start', cx, H * 0.76, clamp(W * 0.042, 17, 24), C.eye, C.night);
+    } else {
+      ctx.fillRect(0, 0, W, H);
+      text('Final score', cx, H * 0.17, small, C.muted, null, BODY);
+      text(String(cur.score), cx, H * 0.31, big * 1.2, C.marmalade, C.night);
+      wrapText(cur.quip(), cx, H * 0.47, maxW, small, C.fur);
+      if (newBest) text('New best', cx, H * 0.64, clamp(W * 0.036, 15, 20), C.eye, C.night);
+      if (canStart()) text(tapWord + ' to play again', cx, H * 0.8, clamp(W * 0.042, 17, 24), C.eye, C.night);
+      if (cur.score > 0) text('Add your score to the leaderboard below', cx, H * 0.91, small * 0.9, C.muted, null, BODY);
+    }
+  }
+
+  function hud() {
+    const rows = cur.hud().concat([['Best', best.get(cur.key)]]);
+    const sig = JSON.stringify(rows);
+    if (sig === hudSig) return;
+    hudSig = sig;
+    rows.forEach(([l, v], i) => { hudEls[i][0].textContent = l; hudEls[i][1].textContent = v; });
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (phase === 'play') { cur.update(dt); if (cur.over) end(); }
+    else if (phase === 'ready' && cur.idle) cur.idle(dt);
+    fx.update(dt);
+    ctx.clearRect(0, 0, W, H);
+    cur.draw();
+    fx.draw();
+    if (phase !== 'play') overlay();
+    hud();
+    requestAnimationFrame(frame);
+  }
+
+  resize();
+  select(location.hash.slice(1) || 'knock');
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
