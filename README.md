@@ -19,12 +19,13 @@ Live at https://nine-lives-arcade.netlify.app
 
 ## Deploying
 
-This repository is the only source of truth for the site. Deploy from an up-to-date `main`, never from a copy that hasn't been pulled.
+Netlify is linked to this repository. Every push to `main` deploys the live site automatically (about 15 Netlify credits each on the free plan), so batch changes into one push.
 
 ```bash
 git pull
 npm install
-npx netlify-cli deploy --prod --no-build --dir site --functions netlify/functions --message "<what changed>"
+# make and test changes locally, then:
+git push origin main
 ```
 
-Before deploying, check that the newest deploy in Netlify was made from this repository's current `main`. If someone deployed something that isn't in `main`, merge it in first.
+Nothing else should deploy the site. If the newest deploy in Netlify isn't from a commit in `main`, merge its files into `main` before pushing.
